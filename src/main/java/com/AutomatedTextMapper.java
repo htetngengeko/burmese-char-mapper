@@ -1,10 +1,14 @@
 package com;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
 
-public class BurmeseCharMapper {
+public class AutomatedTextMapper {
 
     static class BurmeseChar {
         String phonetic;
@@ -18,10 +22,24 @@ public class BurmeseCharMapper {
         }
     }
 
-    public String mappedId(String burmeseString) {
+    public static void main(String[] args) {
 
+        // ==========================================
+        // 1. SET YOUR PATHS HERE
+        // ==========================================
+        // Your input text file containing the Burmese sentences
+        String inputFilePath = "";
+        // The output file where the mapping will be saved (e.g., labels.txt)
+        String outputFilePath = "txt";
+
+        // Image naming settings
+        String prefix = "Sentence-";
+        int counter = 1; // Start counting from 1 (or whatever number you need)
+
+        // ==========================================
+        // 2. SETUP CHARACTER MAPPING LIST
+        // ==========================================
         List<BurmeseChar> charList = new LinkedList<>();
-        StringBuilder result = new StringBuilder();
 
         charList.add(new BurmeseChar("0", 1, "၀"));
         charList.add(new BurmeseChar("1", 2, "၁"));
@@ -112,52 +130,57 @@ public class BurmeseCharMapper {
         charList.add(new BurmeseChar("virama", 79, "္"));
 
 
-        for (int i = 0; i < burmeseString.length(); i++) {
+        // ==========================================
+        // 3. READ INPUT AND WRITE TO OUTPUT
+        // ==========================================
+        System.out.println("Processing file: " + inputFilePath);
 
-            String charToFind = String.valueOf(burmeseString.charAt(i));
-            boolean found = false;
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(outputFilePath))) {
 
-            for (BurmeseChar bChar : charList) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
 
-                if (bChar.script.equals(charToFind)) {
-                    result.append(bChar.id).append(" ");
-                    found = true;
-                    break;
+                if (line.isEmpty()) {
+                    continue; // Skip empty lines
                 }
+
+                // Construct the output line (e.g., "Sentence-1.jpeg    ")
+                StringBuilder currentOutputLine = new StringBuilder();
+                currentOutputLine.append(prefix).append(counter).append(".jpeg    ");
+
+                // Map each character to its ID
+                for (int i = 0; i < line.length(); i++) {
+                    String charToFind = String.valueOf(line.charAt(i));
+                    boolean found = false;
+
+                    for (BurmeseChar bChar : charList) {
+                        if (bChar.script.equals(charToFind)) {
+                            currentOutputLine.append(bChar.id).append(" ");
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        currentOutputLine.append("? "); // Mark unknown characters
+                    }
+                }
+
+                // Write the completed line to the new text file
+                writer.write(currentOutputLine.toString().trim());
+                writer.newLine(); // Move to the next line in the text file
+
+                counter++;
             }
 
-            if (!found) {
-                result.append("? ");
-            }
+            System.out.println("Success! Labels saved to: " + outputFilePath);
+            System.out.println("Total lines processed: " + (counter - 1));
+
+        } catch (IOException e) {
+            System.err.println("Error processing files: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        return result.toString().trim();
-    }
-
-
-
-    public static void main(String[] args) {
-
-        BurmeseCharMapper mapper = new BurmeseCharMapper();
-        Scanner scanner = new Scanner(System.in);
-
-        while (true) {
-
-            System.out.print("Enter Burmese text: ");
-            String input = scanner.nextLine();
-
-            String output = mapper.mappedId(input);
-
-            System.out.println("Mapped IDs: " + output);
-
-            System.out.print("Continue? (y/n): ");
-            String choice = scanner.nextLine();
-
-            if (choice.equalsIgnoreCase("n")) {
-                break;
-            }
-        }
-
-        scanner.close();
     }
 }
